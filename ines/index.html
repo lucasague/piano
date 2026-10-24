@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="nino" content="Inés">
+<title>El piano de Inés</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icono-192.png">
+<meta name="theme-color" content="#fffaf0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<style>
+  :root {
+    --C: #e53935; --D: #fb8c00; --E: #fdd835; --F: #43a047;
+    --G: #29b6f6; --A: #1e4fd8; --B: #ab47bc;
+    --fondo: #fffaf0; --tinta: #1f2a44;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+  html, body { margin: 0; height: 100%; background: var(--fondo); color: var(--tinta);
+    font-family: "Comic Sans MS", "Chalkboard SE", "Segoe UI", Roboto, sans-serif; overflow: hidden; }
+  button { font-family: inherit; cursor: pointer; }
+  [hidden] { display: none !important; }
+
+  /* ---------- inicio ---------- */
+  #inicio { height: 100%; display: flex; flex-direction: column; align-items: center; padding: 14px 18px; gap: 10px; overflow-y: auto; }
+  #inicio h1 { margin: 0; font-size: clamp(26px, 6vmin, 44px); }
+  #inicio h1 span { display: inline-block; animation: bote 1.6s ease-in-out infinite; }
+  #canciones { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; width: 100%; max-width: 980px; }
+  .cancion { border: 0; border-radius: 22px; padding: 14px 16px; background: white; box-shadow: 0 4px 0 #0002, 0 6px 16px #0001;
+    text-align: left; font-size: 22px; font-weight: bold; color: var(--tinta); display: flex; flex-direction: column; gap: 8px; }
+  .cancion:active { transform: translateY(3px); box-shadow: 0 1px 0 #0002; }
+  .cancion .puntos { display: flex; gap: 4px; flex-wrap: wrap; }
+  .cancion .puntos i { width: 16px; height: 16px; border-radius: 50%; display: block; }
+  #pie { font-size: 14px; opacity: .6; text-align: center; }
+
+  /* ---------- juego ---------- */
+  #juego { height: 100%; display: flex; flex-direction: column; }
+  #barra { display: flex; align-items: center; gap: 10px; padding: 6px 12px; }
+  #barra button { border: 0; background: white; border-radius: 14px; font-size: 22px; width: 48px; height: 42px; box-shadow: 0 3px 0 #0002; }
+  #titulo { flex: 1; font-size: clamp(20px, 4.5vmin, 30px); font-weight: bold; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #oreja { display: flex; align-items: center; gap: 6px; font-size: 20px; }
+  #nivel { width: 70px; height: 12px; border-radius: 6px; background: #0001; overflow: hidden; }
+  #nivel b { display: block; height: 100%; width: 0; background: #43a047; transition: width .05s; }
+  #oido { min-width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-weight: bold; font-size: 16px; color: white; background: #0002; }
+
+  #partitura { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 2vmin; padding: 0 16px; min-height: 0; }
+  .linea { display: flex; justify-content: center; gap: 0; transition: opacity .3s; }
+  .linea.siguiente { opacity: .45; }
+  .compas { display: flex; gap: 1.2vmin; padding: 0 2.2vmin; border-right: 3px solid #1f2a4455; align-items: flex-end; }
+  .compas:last-child { border-right: 0; }
+  .nota { display: flex; flex-direction: column; align-items: center; gap: .6vmin; }
+  .nota .bola { width: var(--tam); height: var(--tam); border-radius: 50%; background: var(--c); box-shadow: inset 0 -4px 0 #0002;
+    transition: transform .2s, opacity .3s, filter .3s; position: relative; }
+  .nota .letra { font-weight: bold; font-size: calc(var(--tam) * .48); line-height: 1; }
+  .nota.hecha .bola { opacity: .35; transform: scale(.8); }
+  .nota.hecha .bola::after { content: "✓"; position: absolute; inset: 0; display: grid; place-items: center; color: white; font-size: calc(var(--tam) * .55); font-weight: bold; }
+  .nota.hecha .letra { opacity: .35; }
+  .nota.actual .bola { transform: scale(1.35); animation: latido 0.9s ease-in-out infinite; outline: 5px solid var(--tinta); outline-offset: 4px; }
+  .nota.actual { margin: 0 calc(var(--tam) * .25); }
+  .nota.actual .letra { transform: scale(1.3); margin-top: 1.2vmin; }
+  .nota.mal .bola { animation: no .35s; }
+  @keyframes latido { 0%,100% { transform: scale(1.3); } 50% { transform: scale(1.45); } }
+  @keyframes no { 0%,100% { translate: 0; } 25% { translate: -10px; } 75% { translate: 10px; } }
+  @keyframes bote { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+
+  /* teclado de ayuda */
+  #teclado { position: relative; height: clamp(90px, 26vmin, 150px); margin: 0 auto 8px; width: min(96vw, 620px); display: flex; }
+  .blanca { flex: 1; background: white; border: 2px solid #1f2a4466; border-radius: 0 0 12px 12px; margin: 0 2px; position: relative;
+    display: flex; flex-direction: column; justify-content: flex-end; align-items: center; padding-bottom: 8px; transition: background .2s; }
+  .blanca .pegatina { width: 60%; aspect-ratio: 1; border-radius: 50%; background: var(--c); display: grid; place-items: center; font-weight: bold; font-size: clamp(14px, 4vmin, 22px); }
+  .negra { position: absolute; top: 0; width: 9%; height: 55%; background: #222; border-radius: 0 0 8px 8px; z-index: 2; }
+  .blanca.toca { background: #fff6c2; }
+  .blanca.toca::before { content: "👇"; position: absolute; top: -6px; font-size: clamp(24px, 7vmin, 40px); animation: bote .8s ease-in-out infinite; z-index: 3; }
+  .blanca.pulsada { background: #dff5e1; }
+
+  /* fiesta */
+  #fiesta { position: fixed; inset: 0; background: #fffaf0ee; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; z-index: 10; }
+  #fiesta h2 { font-size: clamp(36px, 10vmin, 72px); margin: 0; text-align: center; animation: bote 1s ease-in-out infinite; }
+  #fiesta .botones { display: flex; gap: 14px; }
+  #fiesta button { border: 0; border-radius: 20px; font-size: 24px; padding: 14px 22px; background: white; box-shadow: 0 4px 0 #0002; font-weight: bold; }
+  .confeti { position: fixed; top: -20px; width: 14px; height: 14px; border-radius: 3px; z-index: 11; animation: cae linear forwards; }
+  @keyframes cae { to { transform: translateY(110vh) rotate(720deg); } }
+
+  /* ajustes */
+  #ajustes { position: fixed; inset: 0; background: #0006; display: grid; place-items: center; z-index: 20; }
+  #ajustes > div { background: white; border-radius: 20px; padding: 18px 22px; width: min(92vw, 460px); display: flex; flex-direction: column; gap: 12px; font-size: 18px; }
+  #ajustes input[type=range] { width: 100%; }
+  #ajustes button { border: 0; border-radius: 14px; padding: 10px; font-size: 18px; background: #eee; }
+  #avisoMic { position: fixed; left: 50%; bottom: 14px; translate: -50% 0; background: #c62828; color: white; padding: 10px 16px; border-radius: 14px; font-size: 16px; z-index: 30; text-align: center; }
+</style>
+</head>
+<body>
+
+<section id="inicio">
+  <h1><span>🎹</span> El piano de <b class="nino">José</b></h1>
+  <div id="canciones"></div>
+  <div id="pie">Toca las teclas con pegatinas: la canción avanza sola cuando suena la nota buena.</div>
+</section>
+
+<section id="juego" hidden>
+  <div id="barra">
+    <button id="volver" aria-label="Volver">🏠</button>
+    <button id="reiniciar" aria-label="Empezar otra vez">↺</button>
+    <div id="titulo"></div>
+    <div id="oreja"><span>👂</span><div id="nivel"><b></b></div><div id="oido">·</div></div>
+    <button id="engranaje" aria-label="Ajustes">⚙️</button>
+  </div>
+  <div id="partitura"></div>
+  <div id="teclado"></div>
+</section>
+
+<section id="fiesta" hidden>
+  <h2>⭐ ¡Muy bien, <span class="nino">José</span>! ⭐</h2>
+  <div class="botones">
+    <button id="otraVez">↺ Otra vez</button>
+    <button id="otraCancion">🎵 Otra canción</button>
+  </div>
+</section>
+
+<section id="ajustes" hidden>
+  <div>
+    <b>Ajustes (para papá)</b>
+    <label>Sensibilidad del micrófono: <span id="sensTxt"></span>
+      <input id="sens" type="range" min="1" max="10" step="1"></label>
+    <small>Si avanza solo con ruidos, bájala. Si no se entera de las notas, súbela.<br>
+      Tocar la bola grande la salta; tocar otra bola salta a ella.</small>
+    <button id="cerrarAjustes">Listo</button>
+  </div>
+</section>
+
+<div id="avisoMic" hidden></div>
+
+<script>
+'use strict'
+
+// El nombre del niño sale del <meta name="nino">: publicar.py lo cambia en cada copia.
+const NINO = document.querySelector('meta[name=nino]').content
+document.title = 'El piano de ' + NINO
+document.querySelectorAll('.nino').forEach((e) => { e.textContent = NINO })
+if ('serviceWorker' in navigator && location.protocol === 'https:' && !/androidplatform/.test(location.host)) {
+  navigator.serviceWorker.register('sw.js').catch(() => {})
+}
+
+const NOTAS = ['C', 'D', 'E', 'F', 'G', 'A', 'B']
+const SEMITONO_A_NOTA = { 0: 'C', 2: 'D', 4: 'E', 5: 'F', 7: 'G', 9: 'A', 11: 'B' }
+const color = (n) => `var(--${n})`
+
+// "|" separa compases y "/" separa líneas (como en la tarjeta).
+const CANCIONES = [
+  { nombre: 'Jingle Bells', notas: 'E E E | E E E | E G C D | E / F F F F | F E E E | G G F D | C' },
+  { nombre: 'Jingle Bells (entera)', notas:
+    'E E E | E E E | E G C D | E / F F F F | F E E | E D D E | D G / E E E | E E E | E G C D | E / F F F F | F E E E | G G F D | C' },
+  { nombre: 'Estrellita', notas:
+    'C C G G | A A G | F F E E | D D C / G G F F | E E D | G G F F | E E D / C C G G | A A G | F F E E | D D C' },
+  { nombre: 'Los pollitos dicen', notas: 'C D E F | G G / A A A A | G / A A A A | G / F F F F | E E / D D D D | C' },
+  { nombre: 'Himno de la alegría', notas: 'E E F G | G F E D | C C D E | E D D / E E F G | G F E D | C C D E | D C C' },
+  { nombre: 'Cumpleaños feliz', notas: 'G G A G | C B / G G A G | D C / G G G E | C B A / F F E C | D C' },
+  { nombre: 'Do, re, mi (subir y bajar)', notas: 'C D E F | G A B / B A G F | E D C' },
+]
+
+function parsear(texto) {
+  const lineas = texto.split('/').map((l) => l.split('|').map((c) => c.trim().split(/\s+/)))
+  const plana = []
+  lineas.forEach((compases, li) => compases.forEach((notas, ci) => notas.forEach((n) => plana.push({ n, li, ci }))))
+  return { lineas, plana }
+}
+
+// ---------- pantallas ----------
+const $ = (id) => document.getElementById(id)
+const inicio = $('inicio'), juego = $('juego'), fiesta = $('fiesta')
+
+CANCIONES.forEach((c, i) => {
+  const b = document.createElement('button')
+  b.className = 'cancion'
+  const puntos = parsear(c.notas).plana.slice(0, 14).map((x) => `<i style="background:${color(x.n)}"></i>`).join('')
+  b.innerHTML = `<span>${c.nombre}</span><span class="puntos">${puntos}</span>`
+  b.onclick = () => empezar(i)
+  $('canciones').appendChild(b)
+})
+
+// teclado de ayuda: 7 blancas con sus pegatinas y 5 negras
+const teclas = {}
+NOTAS.forEach((n) => {
+  const t = document.createElement('div')
+  t.className = 'blanca'
+  t.innerHTML = `<div class="pegatina" style="--c:${color(n)}">${n}</div>`
+  $('teclado').appendChild(t)
+  teclas[n] = t
+})
+;[1, 2, 4, 5, 6].forEach((k) => {
+  const n = document.createElement('div')
+  n.className = 'negra'
+  n.style.left = `calc(${(k / 7) * 100}% - 4.5%)`
+  $('teclado').appendChild(n)
+})
+
+let cancion = null, pos = 0, ultimaAceptada = -Infinity
+
+function empezar(i) {
+  cancion = { ...CANCIONES[i], ...parsear(CANCIONES[i].notas), i }
+  pos = 0
+  $('titulo').textContent = cancion.nombre
+  inicio.hidden = true; fiesta.hidden = true; juego.hidden = false
+  pintar()
+  arrancarMicro()
+}
+
+function pintar() {
+  const p = $('partitura')
+  p.innerHTML = ''
+  if (pos >= cancion.plana.length) return
+  const li = cancion.plana[pos].li
+  const visibles = [li, li + 1].filter((x) => x < cancion.lineas.length)
+  // tamaño de bola según la línea más larga que se ve
+  const maxNotas = Math.max(...visibles.map((x) => cancion.lineas[x].flat().length + cancion.lineas[x].length))
+  const tam = Math.max(28, Math.min(72, (window.innerWidth - 40) / (maxNotas * 1.45), window.innerHeight * 0.13))
+  let idx = cancion.plana.findIndex((x) => x.li === li)
+  visibles.forEach((l, k) => {
+    const fila = document.createElement('div')
+    fila.className = 'linea' + (k ? ' siguiente' : '')
+    cancion.lineas[l].forEach((compas) => {
+      const c = document.createElement('div')
+      c.className = 'compas'
+      compas.forEach((n) => {
+        const yo = idx++
+        const d = document.createElement('div')
+        d.className = 'nota' + (yo < pos ? ' hecha' : '') + (yo === pos ? ' actual' : '')
+        d.style.setProperty('--c', color(n))
+        d.style.setProperty('--tam', tam + 'px')
+        d.innerHTML = `<div class="bola"></div><div class="letra">${n}</div>`
+        d.onclick = () => { if (yo === pos) avanzar(); else { pos = yo; pintar() } }
+        if (yo === pos) d.id = 'actual'
+        c.appendChild(d)
+      })
+      fila.appendChild(c)
+    })
+    p.appendChild(fila)
+  })
+  Object.entries(teclas).forEach(([n, t]) => t.classList.toggle('toca', n === cancion.plana[pos].n))
+}
+
+function avanzar() {
+  const n = cancion.plana[pos].n
+  teclas[n].classList.add('pulsada')
+  setTimeout(() => teclas[n].classList.remove('pulsada'), 250)
+  pos++
+  ultimaAceptada = performance.now()
+  if (pos >= cancion.plana.length) { pintar(); celebrar(); return }
+  pintar()
+}
+
+function fallo() {
+  const a = $('actual')
+  if (!a) return
+  a.classList.remove('mal'); void a.offsetWidth; a.classList.add('mal')
+}
+
+function celebrar() {
+  Object.values(teclas).forEach((t) => t.classList.remove('toca'))
+  fiesta.hidden = false
+  const cols = ['C', 'D', 'E', 'F', 'G', 'A', 'B']
+  for (let i = 0; i < 80; i++) {
+    const c = document.createElement('div')
+    c.className = 'confeti'
+    c.style.left = Math.random() * 100 + 'vw'
+    c.style.background = color(cols[i % 7])
+    c.style.animationDuration = 1.8 + Math.random() * 2 + 's'
+    c.style.animationDelay = Math.random() * 0.8 + 's'
+    document.body.appendChild(c)
+    setTimeout(() => c.remove(), 5000)
+  }
+}
+
+$('volver').onclick = () => { juego.hidden = true; inicio.hidden = false }
+$('reiniciar').onclick = () => { pos = 0; pintar() }
+$('otraVez').onclick = () => empezar(cancion.i)
+$('otraCancion').onclick = () => { fiesta.hidden = true; juego.hidden = true; inicio.hidden = false }
+window.addEventListener('resize', () => { if (cancion && !juego.hidden) pintar() })
+
+// ---------- ajustes ----------
+let sensibilidad = Number(localStorage.getItem('sens') || 5)
+const umbral = () => 0.04 * Math.pow(0.6, sensibilidad - 1) // 5 → ~0.005
+function verSens() { $('sens').value = sensibilidad; $('sensTxt').textContent = sensibilidad }
+verSens()
+$('sens').oninput = (e) => { sensibilidad = Number(e.target.value); localStorage.setItem('sens', sensibilidad); verSens() }
+$('engranaje').onclick = () => { $('ajustes').hidden = false }
+$('cerrarAjustes').onclick = () => { $('ajustes').hidden = true }
+
+// ---------- oído: micrófono + detección de tono (YIN) ----------
+let ctx = null, analizador = null, buf = null
+
+async function arrancarMicro() {
+  if (ctx) { if (ctx.state === 'suspended') ctx.resume(); return }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
+    })
+    ctx = new (window.AudioContext || window.webkitAudioContext)()
+    const fuente = ctx.createMediaStreamSource(stream)
+    analizador = ctx.createAnalyser()
+    analizador.fftSize = 2048
+    fuente.connect(analizador)
+    buf = new Float32Array(analizador.fftSize)
+    $('avisoMic').hidden = true
+    requestAnimationFrame(escuchar)
+  } catch (e) {
+    ctx = null
+    $('avisoMic').textContent = 'No puedo usar el micrófono (' + e.name + '). Dale permiso y vuelve a abrir la canción. Mientras, toca la bola grande para avanzar.'
+    $('avisoMic').hidden = false
+  }
+}
+
+function detectarTono(x, sr) {
+  const n = x.length
+  let rms = 0
+  for (let i = 0; i < n; i++) rms += x[i] * x[i]
+  rms = Math.sqrt(rms / n)
+  const minLag = Math.floor(sr / 1400), maxLag = Math.min(Math.floor(sr / 75), n >> 1)
+  const W = n - maxLag
+  const d = new Float32Array(maxLag + 2)
+  for (let tau = 1; tau <= maxLag + 1; tau++) {
+    let s = 0
+    for (let j = 0; j < W; j++) { const v = x[j] - x[j + tau]; s += v * v }
+    d[tau] = s
+  }
+  // diferencia normalizada acumulada
+  let acc = 0
+  const cm = new Float32Array(maxLag + 2); cm[0] = 1
+  for (let tau = 1; tau <= maxLag + 1; tau++) { acc += d[tau]; cm[tau] = acc ? d[tau] * tau / acc : 1 }
+  let tau = -1
+  for (let t = minLag; t <= maxLag; t++) {
+    if (cm[t] < 0.2) { while (t + 1 <= maxLag && cm[t + 1] < cm[t]) t++; tau = t; break }
+  }
+  if (tau < 2) return { rms, f: -1 }
+  const a = cm[tau - 1], b = cm[tau], c = cm[tau + 1]
+  const den = a - 2 * b + c
+  const fino = den ? tau + (a - c) / (2 * den) : tau
+  return { rms, f: sr / fino }
+}
+
+function claseDeNota(f) {
+  if (f <= 0) return null
+  const midi = Math.round(69 + 12 * Math.log2(f / 440))
+  return SEMITONO_A_NOTA[((midi % 12) + 12) % 12] || '#' // '#' = tecla negra
+}
+
+const historiaRms = []
+let ultimoGolpe = -Infinity, ventanaAbierta = false
+let previa = null, desdePrevia = 0
+
+function escuchar(t) {
+  requestAnimationFrame(escuchar)
+  if (!analizador) return
+  analizador.getFloatTimeDomainData(buf)
+  const { rms, f } = detectarTono(buf, ctx.sampleRate)
+  $('nivel').firstChild.style.width = Math.min(100, rms * 900) + '%'
+
+  // golpe de tecla = subida brusca de volumen
+  const minReciente = historiaRms.length ? Math.min(...historiaRms) : 0
+  historiaRms.push(rms); if (historiaRms.length > 5) historiaRms.shift()
+  if (rms > umbral() && rms > minReciente * 1.6 + umbral() * 0.3 && t - ultimoGolpe > 110) {
+    ultimoGolpe = t; ventanaAbierta = true
+  }
+
+  const clase = rms > umbral() * 0.6 ? claseDeNota(f) : null
+  if (clase !== previa) { previa = clase; desdePrevia = t }
+  // estable desde el golpe: en el ataque aún puede colarse la nota anterior
+  const estable = clase && t - Math.max(desdePrevia, ultimoGolpe) >= 30
+
+  const o = $('oido')
+  o.textContent = clase || '·'
+  o.style.background = clase && clase !== '#' ? color(clase) : '#0002'
+
+  if (!cancion || juego.hidden || !fiesta.hidden || pos >= cancion.plana.length) return
+  const esperada = cancion.plana[pos].n
+
+  if (ventanaAbierta && estable) {
+    ventanaAbierta = false
+    if (clase === esperada) avanzar(); else fallo()
+    return
+  }
+  if (ventanaAbierta && t - ultimoGolpe > 400) ventanaAbierta = false
+
+  // ataque suave que no pareció golpe: vale si la nota es distinta de la anterior y se mantiene
+  const anterior = pos > 0 ? cancion.plana[pos - 1].n : null
+  if (clase === esperada && esperada !== anterior && t - desdePrevia > 180 && t - ultimaAceptada > 250) avanzar()
+}
+</script>
+</body>
+</html>

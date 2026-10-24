@@ -1,4 +1,4 @@
-const CACHE = 'piano-6753661370'
+const CACHE = 'piano-e5b29a7e65'
 const FICHEROS = ['./', 'index.html', 'manifest.json', 'icono-192.png', 'icono-512.png']
 self.addEventListener('install', (e) => { self.skipWaiting(); e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FICHEROS))) })
 self.addEventListener('activate', (e) => e.waitUntil(caches.keys().then((ks) =>

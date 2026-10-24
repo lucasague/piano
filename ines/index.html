@@ -32,6 +32,8 @@
   .cancion .puntos { display: flex; gap: 4px; flex-wrap: wrap; }
   .cancion .puntos i { width: 16px; height: 16px; border-radius: 50%; display: block; }
   #pie { font-size: 14px; opacity: .6; text-align: center; }
+  #instalar { border: 0; border-radius: 18px; padding: 12px 20px; font-size: 20px; font-weight: bold; background: #43a047; color: white; box-shadow: 0 4px 0 #0002; }
+  #pistaIos { font-size: 16px; background: white; padding: 8px 14px; border-radius: 14px; }
 
   /* ---------- juego ---------- */
   #juego { height: 100%; display: flex; flex-direction: column; }
@@ -95,6 +97,8 @@
   <h1><span>🎹</span> El piano de <b class="nino">José</b></h1>
   <div id="canciones"></div>
   <div id="pie">Toca las teclas con pegatinas: la canción avanza sola cuando suena la nota buena.</div>
+  <button id="instalar" hidden>📲 Instalar en el móvil</button>
+  <div id="pistaIos" hidden>Para tenerla como app: botón Compartir ⬆️ y «Añadir a pantalla de inicio».</div>
 </section>
 
 <section id="juego" hidden>
@@ -140,6 +144,15 @@ document.querySelectorAll('.nino').forEach((e) => { e.textContent = NINO })
 if ('serviceWorker' in navigator && location.protocol === 'https:' && !/androidplatform/.test(location.host)) {
   navigator.serviceWorker.register('sw.js').catch(() => {})
 }
+
+// instalar como app (Android: botón; iPhone: pista de Compartir)
+const yaApp = matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches || navigator.standalone
+let avisoInstalar = null
+window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); avisoInstalar = e; $('instalar').hidden = false })
+document.addEventListener('DOMContentLoaded', () => {
+  $('instalar').onclick = async () => { if (!avisoInstalar) return; avisoInstalar.prompt(); await avisoInstalar.userChoice; $('instalar').hidden = true }
+  if (!yaApp && /iPhone|iPad/.test(navigator.userAgent) && location.protocol === 'https:') $('pistaIos').hidden = false
+})
 
 const NOTAS = ['C', 'D', 'E', 'F', 'G', 'A', 'B']
 const SEMITONO_A_NOTA = { 0: 'C', 2: 'D', 4: 'E', 5: 'F', 7: 'G', 9: 'A', 11: 'B' }
